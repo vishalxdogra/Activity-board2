@@ -3,6 +3,7 @@ import { getAuthUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sanitizeHtml } from '@/lib/utils'
 
+// Get logged-in user with verification request
 export async function GET(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Update profile (name/email/profilePicUrl only)
 export async function PUT(request: NextRequest) {
   try {
     const user = await getAuthUser(request)
@@ -69,6 +71,45 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ user: updatedUser })
   } catch (error) {
     console.error('Update user error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// Create verification request (no file upload)
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getAuthUser(request)
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // If already verified, block request
+    const existingUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { isVerified: true, verificationRequest: true },
+    })
+
+    if (existingUser?.isVerified) {
+      return NextResponse.json({ error: 'Already verified' }, { status: 400 })
+    }
+
+    if (existingUser?.verificationRequest && existingUser.verificationRequest.status === 'PENDING') {
+      return NextResponse.json({ error: 'Verification request already pending' }, { status: 400 })
+    }
+
+    // Create verification request without upload
+    await prisma.verificationRequest.upsert({
+      where: { userId: user.id },
+      update: { status: 'PENDING', note: null },
+      create: {
+        userId: user.id,
+        status: 'PENDING',
+      },
+    })
+
+    return NextResponse.json({ message: 'Verification request submitted' })
+  } catch (error) {
+    console.error('Verification request error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

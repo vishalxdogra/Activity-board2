@@ -1,183 +1,202 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Navbar from '@/components/Navbar'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Heart, MessageCircle, Users, MapPin, Calendar, Flag, CheckCircle, Clock } from 'lucide-react'
-import { formatDateTime, getFrequencyLabel, getGenreLabel, getTypeLabel } from '@/lib/utils'
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
+import Navbar from "@/components/Navbar";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  Heart,
+  MessageCircle,
+  Users,
+  MapPin,
+  Calendar,
+  Flag,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
+import {
+  formatDateTime,
+  getFrequencyLabel,
+  getGenreLabel,
+  getTypeLabel,
+} from "@/lib/utils";
 
 interface Activity {
-  id: string
-  title: string
-  description: string
-  type: string
-  genre: string
-  location?: string
-  startDate?: string
-  endDate?: string
-  frequency: string
-  capacity?: number
-  likeCount: number
-  commentCount: number
-  joinedCount: number
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  genre: string;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  frequency: string;
+  capacity?: number;
+  likeCount: number;
+  commentCount: number;
+  joinedCount: number;
   author: {
-    id: string
-    name: string
-    rollNumber: string
-    isVerified: boolean
-  }
-  createdAt: string
-  applicationForm?: any
-  templatesUsed?: any
+    id: string;
+    name: string;
+    rollNumber: string;
+    isVerified: boolean;
+  };
+  createdAt: string;
+  applicationForm?: any;
+  templatesUsed?: any;
 }
 
 interface Comment {
-  id: string
-  text: string
-  createdAt: string
+  id: string;
+  text: string;
+  createdAt: string;
   user: {
-    id: string
-    name: string
-    rollNumber: string
-    isVerified: boolean
-  }
+    id: string;
+    name: string;
+    rollNumber: string;
+    isVerified: boolean;
+  };
 }
 
-export default function ActivityDetailPage({ params }: { params: { id: string } }) {
-  const [activity, setActivity] = useState<Activity | null>(null)
-  const [comments, setComments] = useState<Comment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [commentText, setCommentText] = useState('')
-  const [submittingComment, setSubmittingComment] = useState(false)
-  const [liked, setLiked] = useState(false)
-  const [joined, setJoined] = useState(false)
-  const router = useRouter()
+export default function ActivityDetailPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+
+  const [activity, setActivity] = useState<Activity | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [joined, setJoined] = useState(false);
 
   useEffect(() => {
-    fetchActivity()
-    fetchComments()
-  }, [params.id])
+    if (!params?.id) return;
+    fetchActivity();
+    fetchComments();
+  }, [params?.id]);
 
   const fetchActivity = async () => {
     try {
-      const response = await fetch(`/api/activities/${params.id}`)
+      const response = await fetch(`/api/activities/${params.id}`);
       if (response.ok) {
-        const data = await response.json()
-        setActivity(data.activity)
+        const data = await response.json();
+        setActivity(data.activity);
       } else if (response.status === 404) {
-        alert('Activity not found')
-        router.push('/dashboard')
+        alert("Activity not found");
+        router.push("/dashboard");
       } else if (response.status === 401) {
-        router.push('/auth')
+        router.push("/auth");
       }
     } catch (error) {
-      console.error('Failed to fetch activity:', error)
+      console.error("Failed to fetch activity:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(`/api/activities/${params.id}/comments`)
+      const response = await fetch(`/api/activities/${params.id}/comments`);
       if (response.ok) {
-        const data = await response.json()
-        setComments(data.comments)
+        const data = await response.json();
+        setComments(data.comments);
       }
     } catch (error) {
-      console.error('Failed to fetch comments:', error)
+      console.error("Failed to fetch comments:", error);
     }
-  }
+  };
 
   const handleLike = async () => {
     try {
       const response = await fetch(`/api/activities/${params.id}/like`, {
-        method: 'POST',
-      })
-      
+        method: "POST",
+      });
+
       if (response.ok) {
-        const data = await response.json()
-        setLiked(data.liked)
-        fetchActivity() // Refresh activity data
+        const data = await response.json();
+        setLiked(data.liked);
+        fetchActivity(); // Refresh activity data
       }
     } catch (error) {
-      console.error('Failed to like activity:', error)
+      console.error("Failed to like activity:", error);
     }
-  }
+  };
 
   const handleJoin = async () => {
     try {
       const response = await fetch(`/api/activities/${params.id}/join`, {
-        method: 'POST',
-      })
-      
+        method: "POST",
+      });
+
       if (response.ok) {
-        setJoined(true)
-        fetchActivity() // Refresh activity data
-        alert('Successfully joined the activity!')
+        setJoined(true);
+        fetchActivity(); // Refresh activity data
+        alert("Successfully joined the activity!");
       } else {
-        const data = await response.json()
-        alert(data.error || 'Failed to join activity')
+        const data = await response.json();
+        alert(data.error || "Failed to join activity");
       }
     } catch (error) {
-      console.error('Failed to join activity:', error)
+      console.error("Failed to join activity:", error);
     }
-  }
+  };
 
   const handleComment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!commentText.trim()) return
+    e.preventDefault();
+    if (!commentText.trim()) return;
 
-    setSubmittingComment(true)
+    setSubmittingComment(true);
     try {
       const response = await fetch(`/api/activities/${params.id}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: commentText.trim() }),
-      })
+      });
 
       if (response.ok) {
-        setCommentText('')
-        fetchComments()
-        fetchActivity() // Refresh comment count
+        setCommentText("");
+        fetchComments();
+        fetchActivity(); // Refresh comment count
       } else {
-        const data = await response.json()
-        alert(data.error || 'Failed to post comment')
+        const data = await response.json();
+        alert(data.error || "Failed to post comment");
       }
     } catch (error) {
-      console.error('Failed to post comment:', error)
+      console.error("Failed to post comment:", error);
     } finally {
-      setSubmittingComment(false)
+      setSubmittingComment(false);
     }
-  }
+  };
 
   const handleReport = async () => {
-    const reason = prompt('Please provide a reason for reporting this activity:')
+    const reason = prompt(
+      "Please provide a reason for reporting this activity:"
+    );
     if (!reason || reason.trim().length < 10) {
-      alert('Please provide a valid reason (at least 10 characters)')
-      return
+      alert("Please provide a valid reason (at least 10 characters)");
+      return;
     }
 
     try {
       const response = await fetch(`/api/activities/${params.id}/report`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: reason.trim() }),
-      })
-      
+      });
+
       if (response.ok) {
-        alert('Report submitted successfully')
+        alert("Report submitted successfully");
       } else {
-        const data = await response.json()
-        alert(data.error || 'Failed to submit report')
+        const data = await response.json();
+        alert(data.error || "Failed to submit report");
       }
     } catch (error) {
-      console.error('Failed to report activity:', error)
+      console.error("Failed to report activity:", error);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -187,7 +206,7 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
         </div>
       </div>
-    )
+    );
   }
 
   if (!activity) {
@@ -202,13 +221,13 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Activity Header */}
         <Card className="mb-8">
@@ -223,7 +242,9 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
                     {getGenreLabel(activity.genre)}
                   </span>
                 </div>
-                <CardTitle className="text-2xl mb-2">{activity.title}</CardTitle>
+                <CardTitle className="text-2xl mb-2">
+                  {activity.title}
+                </CardTitle>
                 <div className="flex items-center gap-2 text-gray-600">
                   <span>by {activity.author.name}</span>
                   {activity.author.isVerified && (
@@ -249,7 +270,9 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
 
           <CardContent>
             <div className="prose max-w-none mb-6">
-              <p className="text-gray-700 whitespace-pre-wrap">{activity.description}</p>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {activity.description}
+              </p>
             </div>
 
             {/* Activity Details */}
@@ -260,37 +283,58 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
                   <span>{activity.location}</span>
                 </div>
               )}
-              
+
               {activity.startDate && (
                 <div className="flex items-center gap-2 text-gray-600">
                   <Calendar className="h-4 w-4" />
                   <span>{formatDateTime(activity.startDate)}</span>
                 </div>
               )}
-              
+
               <div className="flex items-center gap-2 text-gray-600">
                 <Clock className="h-4 w-4" />
                 <span>{getFrequencyLabel(activity.frequency)}</span>
               </div>
-              
+
               {activity.capacity && (
                 <div className="flex items-center gap-2 text-gray-600">
                   <Users className="h-4 w-4" />
-                  <span>{activity.joinedCount}/{activity.capacity} joined</span>
+                  <span>
+                    {activity.joinedCount}/{activity.capacity} joined
+                  </span>
                 </div>
               )}
             </div>
 
             {/* College Funded Details */}
-            {activity.type === 'COLLEGE_FUNDED' && activity.applicationForm && (
+            {activity.type === "COLLEGE_FUNDED" && activity.applicationForm && (
               <div className="bg-blue-50 p-4 rounded-lg mb-6">
-                <h3 className="font-semibold text-blue-900 mb-3">Funding Request Details</h3>
+                <h3 className="font-semibold text-blue-900 mb-3">
+                  Funding Request Details
+                </h3>
                 <div className="space-y-2 text-sm text-blue-800">
-                  <p><strong>Funding Goal:</strong> ₹{activity.applicationForm.fundingGoal?.toLocaleString()}</p>
-                  <p><strong>Expected Attendees:</strong> {activity.applicationForm.expectedAttendees}</p>
-                  <p><strong>Venue:</strong> {activity.applicationForm.venueRequirement}</p>
+                  <p>
+                    <strong>Funding Goal:</strong> ₹
+                    {activity.applicationForm.fundingGoal?.toLocaleString()}
+                  </p>
+                  <p>
+                    <strong>Expected Attendees:</strong>{" "}
+                    {activity.applicationForm.expectedAttendees}
+                  </p>
+                  <p>
+                    <strong>Venue:</strong>{" "}
+                    {activity.applicationForm.venueRequirement}
+                  </p>
                   {activity.applicationForm.representativeContact && (
-                    <p><strong>Contact:</strong> {activity.applicationForm.representativeContact.name} ({activity.applicationForm.representativeContact.rollNumber})</p>
+                    <p>
+                      <strong>Contact:</strong>{" "}
+                      {activity.applicationForm.representativeContact.name} (
+                      {
+                        activity.applicationForm.representativeContact
+                          .rollNumber
+                      }
+                      )
+                    </p>
                   )}
                 </div>
               </div>
@@ -302,18 +346,18 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
                 <button
                   onClick={handleLike}
                   className={`flex items-center gap-1 transition-colors ${
-                    liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                    liked ? "text-red-500" : "text-gray-500 hover:text-red-500"
                   }`}
                 >
-                  <Heart className={`h-5 w-5 ${liked ? 'fill-current' : ''}`} />
+                  <Heart className={`h-5 w-5 ${liked ? "fill-current" : ""}`} />
                   <span>{activity.likeCount}</span>
                 </button>
-                
+
                 <div className="flex items-center gap-1 text-gray-500">
                   <MessageCircle className="h-5 w-5" />
                   <span>{activity.commentCount}</span>
                 </div>
-                
+
                 <div className="flex items-center gap-1 text-gray-500">
                   <Users className="h-5 w-5" />
                   <span>{activity.joinedCount}</span>
@@ -323,9 +367,9 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
               <Button
                 onClick={handleJoin}
                 disabled={joined}
-                className={joined ? 'bg-green-600 hover:bg-green-700' : ''}
+                className={joined ? "bg-green-600 hover:bg-green-700" : ""}
               >
-                {joined ? 'Joined' : 'Join Activity'}
+                {joined ? "Joined" : "Join Activity"}
               </Button>
             </div>
           </CardContent>
@@ -347,8 +391,11 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
                   className="flex-1"
                   maxLength={1000}
                 />
-                <Button type="submit" disabled={submittingComment || !commentText.trim()}>
-                  {submittingComment ? 'Posting...' : 'Post'}
+                <Button
+                  type="submit"
+                  disabled={submittingComment || !commentText.trim()}
+                >
+                  {submittingComment ? "Posting..." : "Post"}
                 </Button>
               </div>
             </form>
@@ -356,12 +403,19 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
             {/* Comments List */}
             <div className="space-y-4">
               {comments.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No comments yet. Be the first to comment!</p>
+                <p className="text-gray-500 text-center py-8">
+                  No comments yet. Be the first to comment!
+                </p>
               ) : (
                 comments.map((comment) => (
-                  <div key={comment.id} className="border-b border-gray-100 pb-4 last:border-b-0">
+                  <div
+                    key={comment.id}
+                    className="border-b border-gray-100 pb-4 last:border-b-0"
+                  >
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="font-medium text-gray-900">{comment.user.name}</span>
+                      <span className="font-medium text-gray-900">
+                        {comment.user.name}
+                      </span>
                       {comment.user.isVerified && (
                         <CheckCircle className="h-4 w-4 text-green-500" />
                       )}
@@ -370,7 +424,9 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
                         {new Date(comment.createdAt).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-gray-700 whitespace-pre-wrap">{comment.text}</p>
+                    <p className="text-gray-700 whitespace-pre-wrap">
+                      {comment.text}
+                    </p>
                   </div>
                 ))
               )}
@@ -379,5 +435,5 @@ export default function ActivityDetailPage({ params }: { params: { id: string } 
         </Card>
       </div>
     </div>
-  )
+  );
 }

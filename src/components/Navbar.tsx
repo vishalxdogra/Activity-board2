@@ -1,51 +1,51 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/Button'
-import { User, LogOut, Settings, Shield } from 'lucide-react'
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/Button";
+import { User, LogOut, Settings, Shield } from "lucide-react";
 
 interface User {
-  id: string
-  rollNumber: string
-  name: string
-  isVerified: boolean
-  isAdmin: boolean
+  id: string;
+  rollNumber: string;
+  name: string;
+  isVerified: boolean;
+  isAdmin: boolean;
 }
 
 export default function Navbar() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchUser()
-  }, [])
+    fetchUser();
+  }, []);
 
   const fetchUser = async () => {
     try {
-      const response = await fetch('/api/users/me')
+      const response = await fetch("/api/users/me");
       if (response.ok) {
-        const data = await response.json()
-        setUser(data.user)
+        const data = await response.json();
+        setUser(data.user);
       }
     } catch (error) {
-      console.error('Failed to fetch user:', error)
+      console.error("Failed to fetch user:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      setUser(null)
-      router.push('/auth')
+      await fetch("/api/auth/logout", { method: "POST" });
+      setUser(null);
+      router.push("/auth");
     } catch (error) {
-      console.error('Logout failed:', error)
+      console.error("Logout failed:", error);
     }
-  }
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
@@ -67,7 +67,7 @@ export default function Navbar() {
                 <Link href="/create">
                   <Button size="sm">Create Activity</Button>
                 </Link>
-                
+
                 <div className="flex items-center space-x-2">
                   <div className="flex items-center space-x-1">
                     <User className="h-4 w-4 text-gray-500" />
@@ -78,14 +78,14 @@ export default function Navbar() {
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center space-x-1">
                     <Link href="/profile">
                       <Button variant="ghost" size="sm">
                         <Settings className="h-4 w-4" />
                       </Button>
                     </Link>
-                    
+
                     {user.isAdmin && (
                       <Link href="/admin/verify">
                         <Button variant="ghost" size="sm">
@@ -93,7 +93,7 @@ export default function Navbar() {
                         </Button>
                       </Link>
                     )}
-                    
+
                     <Button variant="ghost" size="sm" onClick={handleLogout}>
                       <LogOut className="h-4 w-4" />
                     </Button>
@@ -109,5 +109,5 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
-  )
+  );
 }

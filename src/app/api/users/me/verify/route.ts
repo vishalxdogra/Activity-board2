@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
 import { getAuthUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { v2 as cloudinary } from 'cloudinary'
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,14 +22,14 @@ export async function POST(request: NextRequest) {
       where: { userId: user.id },
     })
 
-    if (existingRequest && existingRequest.status === 'PENDING') {
+    if (existingRequest?.status === 'PENDING') {
       return NextResponse.json(
         { error: 'Verification request already pending' },
         { status: 409 }
       )
     }
 
-    if (existingRequest && existingRequest.status === 'APPROVED') {
+    if (existingRequest?.status === 'APPROVED') {
       return NextResponse.json(
         { error: 'User is already verified' },
         { status: 409 }
@@ -53,33 +59,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'uploads', 'verification')
-    await mkdir(uploadsDir, { recursive: true })
-
-    // Generate unique filename
-    const timestamp = Date.now()
-    const extension = file.name.split('.').pop()
-    const filename = `${user.id}_${timestamp}.${extension}`
-    const filepath = join(uploadsDir, filename)
-
-    // Save file
+    // Convert File -> Buffer -> Base64 for Cloudinary
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-    await writeFile(filepath, buffer)
+
+    const uploadResult = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { folder: "verification_uploads", resource_type: "auto" },
+        (error, result) => {
+          if (error) return reject(error)
+          resolve(result as { secure_url: string })
+        }
+      )
+      uploadStream.end(buffer)
+    })
 
     // Create or update verification request
     const verificationRequest = await prisma.verificationRequest.upsert({
       where: { userId: user.id },
       update: {
-        idImageUrl: `/uploads/verification/${filename}`,
+        idImageUrl: uploadResult.secure_url,
         status: 'PENDING',
         note: null,
         adminId: null,
       },
       create: {
         userId: user.id,
-        idImageUrl: `/uploads/verification/${filename}`,
+        idImageUrl: uploadResult.secure_url,
         status: 'PENDING',
       },
     })
@@ -92,7 +98,6 @@ export async function POST(request: NextRequest) {
         createdAt: verificationRequest.createdAt,
       },
     })
-
   } catch (error) {
     console.error('Verification upload error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

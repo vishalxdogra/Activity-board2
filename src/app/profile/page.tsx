@@ -29,6 +29,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [submittingRequest, setSubmittingRequest] = useState(false)
+  const [idFile, setIdFile] = useState<File | null>(null)
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -84,14 +85,25 @@ export default function ProfilePage() {
   }
 
   const handleVerificationRequest = async () => {
+    if (!idFile) {
+      alert('Please upload your ID proof before submitting.')
+      return
+    }
+
     setSubmittingRequest(true)
     try {
-      const response = await fetch('/api/users/me', {
+      const formData = new FormData()
+      formData.append('idImage', idFile)
+
+      const response = await fetch('/api/users/me/verify', {
         method: 'POST',
+        body: formData,
       })
+
       if (response.ok) {
         alert('Verification request submitted!')
         fetchUser()
+        setIdFile(null) // reset file after upload
       } else {
         const data = await response.json()
         alert(data.error || 'Failed to submit request')
@@ -220,7 +232,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Verification Status</CardTitle>
-              <CardDescription>Request verification</CardDescription>
+              <CardDescription>Upload ID proof and request verification</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -246,13 +258,18 @@ export default function ProfilePage() {
 
                 {!user.isVerified && (
                   <div className="space-y-4">
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <h4 className="font-medium text-blue-900 mb-2">Why get verified?</h4>
-                      <ul className="text-sm text-blue-800 space-y-1">
-                        <li>• Create and organize activities</li>
-                        <li>• Get a verified badge next to your name</li>
-                        <li>• Build trust in the community</li>
-                      </ul>
+                    {/* File Upload */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Upload ID Proof (JPEG, PNG, PDF)
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,application/pdf"
+                        onChange={(e) => setIdFile(e.target.files?.[0] || null)}
+                        className="block w-full text-sm text-gray-600 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none"
+                      />
+                      
                     </div>
 
                     <Button
